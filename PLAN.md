@@ -1,99 +1,54 @@
-# Poker Bot Project Plan
+# Online Poker Bot - Project Plan
 
-This document outlines a roadmap for building an online poker bot that can read game state information, reason about optimal actions, and execute plays autonomously. The focus is on modularity, observability, and safety so that individual subsystems can be improved independently.
+## 1. Vision
+To create an autonomous bot that plays online poker. The bot will work by observing the game through screen capture, understanding the game's rules with a core engine, and making intelligent decisions using a "brain" component.
 
-## 1. Goals & Success Criteria
-1. **Functional play:** Bot reliably reads state from a supported poker client, decides on actions, and issues those actions within latency targets (<300 ms from opponent action to our response).
-2. **Poker intelligence:** Underlying decision logic is competitive against reasonable human opponents in NLHE six-max cash games and designed for future variants.
-3. **Safety & control:** Includes guardrails such as max-loss limits, opt-in confirmation modes, and replay logging for audits.
-4. **Extensibility:** Architecture supports plugging in improved perception modules, game engines, or strategy models without rewriting everything else.
+## 2. Core Components
 
-## 2. High-Level Architecture
-| Layer | Responsibilities | Key Tech |
-| --- | --- | --- |
-| **Capture & Vision** | Screen capture, template matching, OCR of cards/stacks, opponent action detection. | OpenCV, pytesseract, pyautogui, GPU optional |
-| **State Reconstruction** | Transform visual signals into structured game state (seats, stacks, pot, cards). | Custom parsing, Kalman filters for noisy data |
-| **Poker Engine** | Deterministic representation of game rules, hand evaluator, simulator. | Python/C++ engine, fast combinatorics, Monte Carlo |
-| **Strategy Brain** | Choose action from state: heuristic strategies or learned policy models; bankroll/risk modules. | PyTorch, rule-based modules |
-| **Action Execution** | Mapping chosen actions to mouse/keyboard events with anti-detection practices. | pyautogui/OS-level automation |
-| **Data & Control Plane** | Logging, analytics, configuration, safety checks, UI for monitoring. | SQLite/Postgres, gRPC/REST |
+### a. Perception (The Eyes)
+This component's job is to see and interpret the game state from the online poker client.
 
-## 3. Detailed Component Plans
+*   **Function:** It will capture the screen and use computer vision and OCR (Optical Character Recognition) to read all relevant information.
+*   **Key Information to Capture:**
+    *   Hole cards and community cards.
+    *   Player stack sizes and the current pot size.
+    *   Positions, blinds, and whose turn it is.
+    *   Opponent actions (fold, check, bet, raise).
+*   **Output:** A structured, machine-readable summary of the current game state.
 
-### 3.1 Capture & Image Recognition
-- **Screen acquisition:** Implement cross-platform window selector; capture at 30–60 FPS. Use OS APIs for direct window buffer to avoid artifacts.  
-- **Table detection:** Template match table layout; align coordinate system even if the window moves.  
-- **Element recognition:** 
-  - Card recognition via CNN classifier trained on card sprites plus synthetic noise.  
-  - OCR for stack sizes, pot, bet controls (consider Tesseract with custom whitelist).  
-  - Icon detection to know seat actions (fold/check/raise).  
-- **Change detection:** Frame differencing to detect when new decision state occurs; throttle downstream processing when idle.  
-- **Calibration tooling:** Build labeling GUI to annotate screenshots, generating datasets for CV models.  
-- **Testing:** Unit tests on synthetic frames and replay-based integration tests.
+### b. Poker Engine (The Rulebook)
+This is the foundation of the bot, providing a perfect understanding of the rules of poker.
 
-### 3.2 Game State Reconstruction
-- **State machine:** Parse rounds (preflop/flop/turn/river/showdown) using events from capture layer.  
-- **Data model:** Define protobuf/JSON schema describing seats, blinds, pot, hole cards, actions, time remaining.  
-- **Error handling:** Confidence scores per field; fallback to “uncertain” state requiring manual confirm.  
-- **Synchronization:** Track hand IDs; align with historical logs for debugging.  
-- **Latency budget:** <50 ms for state assembly once frame is processed.
+*   **Function:** It will act as a deterministic and fast simulator for the game.
+*   **Key Capabilities:**
+    *   Enforce game rules (e.g., legal moves, betting order).
+    *   Evaluate hand strength (e.g., determine the winning hand at showdown).
+    *   Calculate pot and side-pot splits.
+*   **Output:** The ability to validate game states and simulate future possibilities for the "Brain" to use.
 
-### 3.3 Poker Game Engine
-- **Core rules:** Encode betting mechanics, side pots, showdown resolution, rake, table configuration.  
-- **Hand evaluator:** Precompute lookup tables or use bit masks for 7-card hand strength; ensure microsecond evaluation.  
-- **Simulation tools:** 
-  - Monte Carlo rollouts for EV estimation given ranges.  
-  - Counterfactual regret minimization (CFR) module to refine strategies offline.  
-- **APIs:** Provide deterministic interfaces for the Strategy Brain (e.g., `evaluate_action(state, action)`).
+### c. Strategy (The Brain)
+This component is the decision-making center. It takes the game state and decides what action to take.
 
-### 3.4 Strategy Brain
-- **Mode 1 – Heuristic strategy:** Start with rule-based strategy (preflop charts, postflop heuristics).  
-- **Mode 2 – Learning-based:** 
-  - Data ingestion pipeline to store hand histories and outcomes.  
-  - Option to train neural nets (policy/value networks) using imitation learning or reinforcement learning.  
-- **Action selection:** Combine long-term EV with risk constraints (stop-loss, bankroll fraction).  
-- **Exploit detection:** Model opponent tendencies (VPIP, aggression) using running stats.  
-- **Configuration:** Strategy profiles per stake/site; YAML or UI for runtime switching.  
-- **Testing:** Simulated matches against bots/historical data; integration with poker engine to verify decisions.
+*   **Function:** To select the most profitable action (check, bet, fold, raise) in any given situation.
+*   **Implementation Strategy:** This is a major design choice with two primary paths:
+    1.  **GTO (Game Theory Optimal) Approach:** Use a pre-solved GTO database. The bot would look up the current game situation and play the theoretically "correct" move. This is a logic-based approach.
+    2.  **Machine Learning Approach:** Train a neural network model to play. This would involve collecting a large dataset of hands and using it to teach the model how to respond to different scenarios. This is a data-driven approach.
+*   **Output:** A specific action to be taken (e.g., "Raise to $15.50").
 
-### 3.5 Action Execution & Anti-Detection
-- **Input driver:** Map actions to mouse movements/clicks; randomize timing and paths to reduce detectability.  
-- **Safety interlocks:** Global pause hotkey, daily stop-loss, confirm mode.  
-- **Multi-table support:** Scheduler to manage focus and action across tables with priority queue.  
-- **Regulatory considerations:** Research terms of service/legalities for each target site; optional “observer mode” to run without executing actions.
+### d. Action (The Hands)
+This component executes the decision made by the "Brain."
 
-### 3.6 Data, Control & Tooling
-- **Logging:** Structured event logs (state snapshots, decisions, rewards) stored locally; integrate with analytics dashboards.  
-- **Replay viewer:** GUI/CLI for step-by-step review of hands with overlays from image captures.  
-- **Monitoring:** Real-time HUD showing inferred state, chosen action, confidence, timers.  
-- **Configuration management:** Environment-specific configs for resolutions, table skins, strategy parameters.  
-- **Deployment:** Containerized services for headless operation; CI pipeline with lint/tests; packaging for Windows/macOS.
+*   **Function:** To translate the bot's desired action into user inputs on the poker client.
+*   **Key Capabilities:**
+    *   Control the mouse to click buttons (e.g., "Fold," "Bet").
+    *   Enter bet amounts into text boxes.
+*   **Output:** The bot successfully performs its chosen action in the live game.
 
-## 4. Project Phases & Milestones
-1. **Foundation (Weeks 1–3):** Repo setup, coding standards, choose primary language (likely Python), build basic poker engine and CLI harness.  
-2. **Perception MVP (Weeks 3–6):** Implement screen capture + manual calibration; read player stacks and cards for a single site at fixed resolution.  
-3. **State Machine & Logging (Weeks 5–8):** Translate perception outputs to structured hands; add logging/replay to validate accuracy.  
-4. **Heuristic Strategy (Weeks 7–10):** Implement baseline decision rules and action executor; test in sandbox or play-money tables.  
-5. **Learning Pipeline (Weeks 10–16):** Collect data, train initial models (supervised preflop charts, simple postflop nets).  
-6. **Advanced Features (Weeks 16+):** Multi-table support, opponent modeling, configurable risk management, UI dashboards.  
-7. **Optimization & Hardening:** Performance tuning, failover, detection risk mitigation, compliance review.
+## 3. Development Approach
+The project should be built in a modular and incremental way.
 
-## 5. Technical Risks & Mitigations
-- **OCR/vision accuracy:** Mitigate by building large labeled dataset, using ensemble methods, and adding human override mode.  
-- **Latency spikes:** Profile capture and inference pipeline; pre-allocate buffers; consider GPU acceleration.  
-- **Site detection countermeasures:** Use non-intrusive capture methods, randomize behavior, keep bot private.  
-- **Strategy quality:** Start with proven theory (GTO charts); iteratively refine via simulations and logs.  
-- **Legal/ethical concerns:** Research jurisdictions, maintain manual override, restrict use to allowed environments.
-
-## 6. Tooling & Stack Recommendations
-- **Languages:** Python for glue + ML, C++/Rust for hot paths (hand evaluator, CFR).  
-- **ML stack:** PyTorch, TensorBoard, Hydra config system.  
-- **CV stack:** OpenCV, ONNX Runtime, Tesseract; custom datasets stored in DVC.  
-- **Infrastructure:** Poetry/pipenv for dependency management, pre-commit hooks, pytest suite, Docker for reproducibility.
-
-## 7. Next Steps
-1. Choose target poker site(s) and capture baseline screenshots to guide CV work.  
-2. Prototype core poker engine (hand evaluator + rule enforcement).  
-3. Build capture calibration tool to assemble training data.  
-4. Draft heuristic strategy specification and risk limits before integrating automation.
-
+1.  **Build the Poker Engine first.** This is the logical core that everything else depends on.
+2.  **Develop the Perception component** for a single, specific poker site.
+3.  **Implement a simple, rule-based Strategy** to start (e.g., using standard pre-flop charts). This allows for end-to-end testing before tackling the more complex "Brain" logic.
+4.  **Connect all components** to create a functional, baseline bot.
+5.  **Iterate and Improve.** Once the baseline is working, focus can shift to the main challenge: developing the advanced GTO or ML-based "Brain."
