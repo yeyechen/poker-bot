@@ -129,15 +129,15 @@ class LookupTable(object):
         # since it is the best hand in poker
         # rank 1 = Royal Flush!
         self._fill_in_lookup_table(
-            rank_init=1,
-            rankbits_list=straight_flushes,
-            lookup_table=self.flush_lookup)
+            rank_init=1, rankbits_list=straight_flushes, lookup_table=self.flush_lookup
+        )
         # we start the counting for flushes on max full house, which
         # is the worst rank that a full house can have (2,2,2,3,3)
         self._fill_in_lookup_table(
             rank_init=LookupTable.MAX_FULL_HOUSE + 1,
             rankbits_list=flushes,
-            lookup_table=self.flush_lookup)
+            lookup_table=self.flush_lookup,
+        )
         # we can reuse these bit sequences for straights
         # and high cards since they are inherently related
         # and differ only by context
@@ -160,11 +160,13 @@ class LookupTable(object):
         self._fill_in_lookup_table(
             rank_init=LookupTable.MAX_FLUSH + 1,
             rankbits_list=straights,
-            lookup_table=self.unsuited_lookup)
+            lookup_table=self.unsuited_lookup,
+        )
         self._fill_in_lookup_table(
             rank_init=LookupTable.MAX_PAIR + 1,
             rankbits_list=highcards,
-            lookup_table=self.unsuited_lookup)
+            lookup_table=self.unsuited_lookup,
+        )
 
     def multiples(self):
         """
@@ -213,7 +215,11 @@ class LookupTable(object):
             for kickers in gen:
 
                 c1, c2 = kickers
-                product = EvaluationCard.PRIMES[r] ** 3 * EvaluationCard.PRIMES[c1] * EvaluationCard.PRIMES[c2]
+                product = (
+                    EvaluationCard.PRIMES[r] ** 3
+                    * EvaluationCard.PRIMES[c1]
+                    * EvaluationCard.PRIMES[c2]
+                )
                 self.unsuited_lookup[product] = rank
                 rank += 1
 

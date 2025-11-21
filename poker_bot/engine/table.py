@@ -26,9 +26,9 @@ class PokerTable:
         self.community_cards: List[Card] = []
         self.n_games: int = 0
         if self.n_players < 2:
-            raise ValueError(f'Must be atleast two players on the table.')
+            raise ValueError(f"Must be atleast two players on the table.")
         if not all(p.pot.uid == self.pot.uid for p in self.players):
-            raise ValueError(f'Players and table point to different pots.')
+            raise ValueError(f"Players and table point to different pots.")
 
     @property
     def n_players(self) -> int:
@@ -39,7 +39,7 @@ class PokerTable:
         """Set the players."""
         self.players = players
         if not all(p.pot.uid == self.pot.uid for p in self.players):
-            raise ValueError(f'Players and table point to different pots.')
+            raise ValueError(f"Players and table point to different pots.")
 
     def add_community_card(self, card: Card):
         """Add a public card to the table for all players to use."""

@@ -75,7 +75,10 @@ class EvaluationCard:
     def int_to_str(card_int):
         rank_int = EvaluationCard.get_rank_int(card_int)
         suit_int = EvaluationCard.get_suit_int(card_int)
-        return EvaluationCard.STR_RANKS[rank_int] + EvaluationCard.INT_SUIT_TO_CHAR_SUIT[suit_int]
+        return (
+            EvaluationCard.STR_RANKS[rank_int]
+            + EvaluationCard.INT_SUIT_TO_CHAR_SUIT[suit_int]
+        )
 
     @staticmethod
     def get_rank_int(card_int):
@@ -169,6 +172,7 @@ class EvaluationCard:
         color = False
         try:
             from termcolor import colored
+
             # for mac, linux: http://pypi.python.org/pypi/termcolor
             # can use for windows: http://pypi.python.org/pypi/colorama
             color = True

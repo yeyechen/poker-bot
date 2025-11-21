@@ -43,12 +43,12 @@ class Player:
 
     def __repr__(self):
         """"""
-        return '<Player name="{}" n_chips={:05d} n_bet_chips={:05d} ' \
-            'folded={}>'.format(
-                self.name,
-                self.n_chips,
-                self.n_bet_chips,
-                int(not self._is_active))
+        return (
+            '<Player name="{}" n_chips={:05d} n_bet_chips={:05d} '
+            "folded={}>".format(
+                self.name, self.n_chips, self.n_bet_chips, int(not self._is_active)
+            )
+        )
 
     def add_chips(self, chips: int):
         """Add chips."""
@@ -86,7 +86,7 @@ class Player:
     def add_to_pot(self, n_chips: int):
         """Add to the n_chips put into the pot by this player."""
         if n_chips < 0:
-            raise ValueError(f'Can not subtract chips from pot.')
+            raise ValueError(f"Can not subtract chips from pot.")
         # TODO(fedden): This code is called by engine.py for the small and big
         #               blind. What if the player can't actually add the blind?
         #               What do the rules stipulate in these circumstances.

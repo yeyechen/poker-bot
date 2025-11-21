@@ -21,8 +21,7 @@ class Pot:
     def __getitem__(self, player: Player):
         """Get a players contribution to the pot."""
         if not isinstance(player, Player):
-            raise ValueError(
-                f'Index the pot with the player to get the contribution.')
+            raise ValueError(f"Index the pot with the player to get the contribution.")
         return self._pot[player]
 
     def add_chips(self, player: Player, n_chips: int):
