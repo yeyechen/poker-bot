@@ -86,7 +86,9 @@ class Evaluator(object):
 
     def get_rank_class(self, hr):
         """Returns the class of hand from the hand hand_rank from evaluate."""
-        if hr >= 0 and hr <= LookupTable.MAX_STRAIGHT_FLUSH:
+        if hr < 0:
+            raise Exception("Inavlid hand rank, cannot return rank class")
+        elif hr <= LookupTable.MAX_STRAIGHT_FLUSH:
             c = LookupTable.MAX_TO_RANK_CLASS[LookupTable.MAX_STRAIGHT_FLUSH]
         elif hr <= LookupTable.MAX_FOUR_OF_A_KIND:
             c = LookupTable.MAX_TO_RANK_CLASS[LookupTable.MAX_FOUR_OF_A_KIND]
