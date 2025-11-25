@@ -69,8 +69,8 @@ class Player:
             self.add_to_pot(n_chips_to_call)
             return Call()
 
-    def raise_to(self, n_chips: int):
-        """Raise your bet to a certain n_chips."""
+    def _raise_by(self, n_chips: int):
+        """Raise your bet by a certain amount."""
         n_chips = self.add_to_pot(n_chips)
         raise_action = Raise()
         raise_action(n_chips)
@@ -82,6 +82,12 @@ class Player:
             # We can't bet more than we have.
             n_chips = self.n_chips
         return n_chips
+
+    def raise_to(self, target_total: int):
+        """Raise total bet to a specific amount."""
+        current_bet = self.n_bet_chips
+        amount_to_add = target_total - current_bet
+        return self._raise_by(amount_to_add)
 
     def add_to_pot(self, n_chips: int):
         """Add to the n_chips put into the pot by this player."""
