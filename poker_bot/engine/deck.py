@@ -25,7 +25,17 @@ class Deck:
         self.reset()
 
     def __len__(self) -> int:
-        """Return overall length of the deck."""
+        """Return number of cards remaining in the deck."""
+        return len(self._cards_in_deck)
+
+    @property
+    def dealt_count(self) -> int:
+        """Return the number of cards that have been dealt."""
+        return len(self._dealt_cards)
+
+    @property
+    def total_count(self) -> int:
+        """Return the total number of cards (remaining + dealt)."""
         return len(self._cards_in_deck) + len(self._dealt_cards)
 
     def reset(self):
