@@ -5,7 +5,7 @@ import uuid
 from abc import ABC, abstractmethod
 from typing import List, TYPE_CHECKING
 
-from poker_bot.engine.actions import Call, Fold, Raise
+from poker_bot.engine.actions import Action, Call, Fold, Raise
 from poker_bot.engine.state import PokerGameState
 
 if TYPE_CHECKING:
@@ -29,20 +29,18 @@ class Player:
     """
 
     def __init__(self, name: str, initial_chips: int, pot: Pot):
-        """Instanciate a player."""
         self.name: str = name
         self.n_chips: int = initial_chips
         self.cards: List[Card] = []
-        self._is_active = True
+        self._is_active: bool = True
         self.id = int(uuid.uuid4().hex, 16)
-        self.pot = pot
-        self.order = None
+        self.pot: Pot = pot
+        self.order: int = None
         self.is_small_blind = False
         self.is_big_blind = False
         self.is_dealer = False
 
     def __repr__(self):
-        """"""
         return (
             '<Player name="{}" n_chips={:05d} n_bet_chips={:05d} '
             "folded={}>".format(
@@ -50,60 +48,66 @@ class Player:
             )
         )
 
-    def add_chips(self, chips: int):
-        """Add chips."""
-        self.n_chips += chips
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
 
-    def fold(self):
-        """Deactivate player for this hand by folding cards."""
+    @is_active.setter
+    def is_active(self, x):
+        self._is_active = x
+
+    @property
+    def is_all_in(self) -> bool:
+        return self._is_active and self.n_chips == 0
+
+    @property
+    def n_bet_chips(self) -> int:
+        return self.pot[self]
+
+    def _get_min_valid_amount_to_call(self, chips_to_call: int) -> int:
+        return min(self.n_chips, chips_to_call)
+
+    def _call_with_best_effort(self, players: List[Player]) -> None:
+        biggest_bet = max(p.n_bet_chips for p in players)
+        amount_to_call = self._get_min_valid_amount_to_call(
+            biggest_bet - self.n_bet_chips
+        )
+        self.add_chips_to_pot(amount_to_call)
+
+    def _check_valid_bet_amount(self, amount: int) -> None:
+        if amount < 0:
+            raise ValueError(f"Can not subtract chips from pot.")
+        if amount > self.n_chips:
+            raise ValueError(f"Can not bet more chips than you have.")
+
+    def _raise_by(self, amount: int) -> Action:
+        self.add_chips_to_pot(amount)
+        action = Raise()
+        action(amount)
+        return action
+
+    def add_chips(self, amount: int) -> None:
+        self.n_chips += amount
+
+    def add_chips_to_pot(self, amount: int) -> None:
+        self._check_valid_bet_amount(amount)
+        self.n_chips -= amount
+        self.pot.add_chips(self, amount)
+
+    def fold(self) -> Action:
         self.is_active = False
         return Fold()
 
-    def call(self, players: List[Player]):
-        """Call the highest bet among all active players."""
-        if self.is_all_in:
-            return Call()
-        else:
-            biggest_bet = max(p.n_bet_chips for p in players)
-            n_chips_to_call = biggest_bet - self.n_bet_chips
-            self.add_to_pot(n_chips_to_call)
-            return Call()
+    def call(self, players: List[Player]) -> Action:
+        if not self.is_all_in:
+            self._call_with_best_effort(players)
+        return Call()
 
-    def _raise_by(self, n_chips: int):
-        """Raise your bet by a certain amount."""
-        n_chips = self.add_to_pot(n_chips)
-        raise_action = Raise()
-        raise_action(n_chips)
-        return raise_action
-
-    def _try_to_make_full_bet(self, n_chips: int):
-        """Ensures no bet is greater than the n_chips of chips left."""
-        if self.n_chips - n_chips < 0:
-            # We can't bet more than we have.
-            n_chips = self.n_chips
-        return n_chips
-
-    def raise_to(self, target_total: int):
-        """Raise total bet to a specific amount."""
-        current_bet = self.n_bet_chips
-        amount_to_add = target_total - current_bet
+    def raise_to(self, amount: int) -> Action:
+        amount_to_add = amount - self.n_bet_chips
         return self._raise_by(amount_to_add)
 
-    def add_to_pot(self, n_chips: int):
-        """Add to the n_chips put into the pot by this player."""
-        if n_chips < 0:
-            raise ValueError(f"Can not subtract chips from pot.")
-        # TODO(fedden): This code is called by engine.py for the small and big
-        #               blind. What if the player can't actually add the blind?
-        #               What do the rules stipulate in these circumstances.
-        #               Ensure that this is sorted.
-        n_chips = self._try_to_make_full_bet(n_chips)
-        self.pot.add_chips(self, n_chips)
-        self.n_chips -= n_chips
-        return n_chips
-
-    def add_private_card(self, card: Card):
-        """Add a private card to this player."""
+    def add_private_card(self, card: Card) -> None:
         self.cards.append(card)
 
     # @abstractmethod
@@ -115,23 +119,3 @@ class Player:
         state.
         """
         pass
-
-    @property
-    def is_active(self) -> bool:
-        """Getter for if the player is playing or not."""
-        return self._is_active
-
-    @is_active.setter
-    def is_active(self, x):
-        """Setter for if the player is playing or not."""
-        self._is_active = x
-
-    @property
-    def is_all_in(self) -> bool:
-        """Return if the player is all in or not."""
-        return self._is_active and self.n_chips == 0
-
-    @property
-    def n_bet_chips(self) -> int:
-        """Returns the n_chips this player has bet so far."""
-        return self.pot[self]

@@ -8,6 +8,7 @@ This module tests the core player mechanics including:
 """
 
 import pytest
+from unittest.mock import Mock
 from poker_bot.engine.player import Player
 from poker_bot.engine.pot import Pot
 from poker_bot.engine.card import Card
@@ -55,8 +56,7 @@ class TestPlayerInitialization:
         player.n_chips = 0
         assert player.is_all_in is True
 
-        # If folded (inactive), is_all_in should be False even with 0 chips?
-        # Logic in Player.is_all_in: return self._is_active and self.n_chips == 0
+        # If folded (inactive), is_all_in should be False even with 0 chips
         player.is_active = False
         assert player.is_all_in is False
 
@@ -69,11 +69,10 @@ class TestChipManagement:
         player.add_chips(500)
         assert player.n_chips == 1500
 
-    def test_add_to_pot(self, player, pot):
+    def test_add_chips_to_pot(self, player, pot):
         """Verify chips move from player stack to pot."""
-        amount_bet = player.add_to_pot(100)
+        player.add_chips_to_pot(100)
 
-        assert amount_bet == 100
         assert player.n_chips == 900
         assert pot.total == 100
         assert pot[player] == 100
@@ -81,18 +80,27 @@ class TestChipManagement:
     def test_bet_capped_at_stack_size(self, player, pot):
         """Verify player cannot bet more chips than they own."""
         # Try to bet 2000 when only having 1000
-        amount_bet = player.add_to_pot(2000)
+        # In new implementation, this raises ValueError in _check_valid_bet_amount
+        with pytest.raises(ValueError, match="Can not bet more chips"):
+            player.add_chips_to_pot(2000)
 
-        # Should be capped at 1000
-        assert amount_bet == 1000
-        assert player.n_chips == 0
-        assert player.is_all_in
-        assert pot[player] == 1000
+    def test_check_valid_bet_amount(self, player):
+        """Verify _check_valid_bet_amount raises errors correctly."""
+        # Negative amount
+        with pytest.raises(ValueError, match="Can not subtract chips"):
+            player._check_valid_bet_amount(-100)
+
+        # Excessive amount
+        with pytest.raises(ValueError, match="Can not bet more chips"):
+            player._check_valid_bet_amount(2000)
+
+        # Valid amount should not raise
+        player._check_valid_bet_amount(1000)
 
     def test_negative_bet_raises_error(self, player):
-        """Verify negative bets raise ValueError."""
+        """Verify negative bets raise ValueError via add_chips_to_pot."""
         with pytest.raises(ValueError, match="Can not subtract chips"):
-            player.add_to_pot(-100)
+            player.add_chips_to_pot(-100)
 
 
 class TestGameActions:
@@ -104,13 +112,21 @@ class TestGameActions:
 
         assert isinstance(action, Fold)
         assert player.is_active is False
-        assert player.is_all_in is False  # Should be False if inactive
+        assert player.is_all_in is False
+
+    def test_get_min_valid_amount_to_call(self, player):
+        """Verify logic for calculating call amount (standard vs all-in)."""
+        # Standard call
+        assert player._get_min_valid_amount_to_call(100) == 100
+
+        # All-in call (only have 1000)
+        assert player._get_min_valid_amount_to_call(2000) == 1000
 
     def test_call_action_initial_bet(self, player, pot):
         """Verify calling a bet from 0 contribution."""
         # Setup: Another player has bet 100
         opponent = ConcretePlayer("Opponent", 1000, pot)
-        opponent.add_to_pot(100)
+        opponent.add_chips_to_pot(100)
 
         # Action: Player calls
         action = player.call([opponent])
@@ -123,10 +139,10 @@ class TestGameActions:
     def test_call_action_partial_contribution(self, player, pot):
         """Verify calling when already partially invested."""
         # Setup: Player put 20 in (e.g. blind), Opponent raised to 100
-        player.add_to_pot(20)
+        player.add_chips_to_pot(20)
 
         opponent = ConcretePlayer("Opponent", 1000, pot)
-        opponent.add_to_pot(100)
+        opponent.add_chips_to_pot(100)
 
         # Action: Player calls
         action = player.call([player, opponent])
@@ -142,7 +158,7 @@ class TestGameActions:
         player.n_chips = 0
 
         opponent = ConcretePlayer("Opponent", 1000, pot)
-        opponent.add_to_pot(100)
+        opponent.add_chips_to_pot(100)
 
         action = player.call([opponent])
 
@@ -165,7 +181,7 @@ class TestGameActions:
     def test_raise_to_incremental(self, player, pot):
         """Verify raise_to() accounts for existing contribution."""
         # Already put in 50
-        player.add_to_pot(50)
+        player.add_chips_to_pot(50)
 
         # Raise TO 200 (Target Total = 200)
         # Should add only 150 more chips (200 - 50)
@@ -173,11 +189,11 @@ class TestGameActions:
 
         assert player.n_chips == 800  # 1000 - 50 (initial) - 150 (raise)
         assert pot[player] == 200  # Total contribution
-        assert action.amount == 150
+        assert action.amount == 150  # Raise amount is the increment (Raise(150))
 
     def test_raise_to_invalid_amount(self, player):
         """Verify raise_to() raises error if target is less than current bet."""
-        player.add_to_pot(100)
+        player.add_chips_to_pot(100)
 
         with pytest.raises(ValueError):
             player.raise_to(50)
