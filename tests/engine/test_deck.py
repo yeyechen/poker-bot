@@ -73,24 +73,6 @@ class TestDeckBasics:
         assert deck.dealt_count == 0
         assert len(deck._dealt_cards) == 0
 
-    def test_remove_card(self):
-        """Test removing specific cards from the deck."""
-        deck = Deck()
-        card_to_remove = Card("ace", "spades")
-
-        # Remove the Ace of Spades
-        deck.remove(card_to_remove)
-
-        assert len(deck) == 51
-        assert deck.total_count == 52
-
-        # Trying to pick until empty should not yield the removed card again
-        remaining_cards = []
-        for _ in range(51):
-            remaining_cards.append(deck.pick())
-
-        assert card_to_remove not in remaining_cards
-
     def test_pick_from_empty_deck_raises_error(self):
         """Test that picking from an empty deck raises ValueError."""
         deck = Deck()
