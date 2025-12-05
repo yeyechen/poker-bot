@@ -31,17 +31,17 @@ class Card:
     """Card to represent a poker card."""
 
     def __init__(self, rank: Union[str, int], suit: str):
-        """Instanciate the card."""
-        if not isinstance(rank, (int, str)):
-            raise ValueError(f"rank should be str/int but was: {type(rank)}.")
-        elif isinstance(rank, str):
+        if isinstance(rank, str):
             rank = self._str_to_rank(rank)
-        if rank < 2 or rank > 14:
+        if not (2 <= rank <= 14):
             raise ValueError(
-                f"rank should be between 2 and 14 (inclusive) but was {rank}"
+                f"rank should be between 2 and 14 (inclusive) but was {rank}."
             )
-        if suit not in get_all_suits():
-            raise ValueError(f"suit {suit} must be in {get_all_suits()}")
+
+        valid_suits = get_all_suits()
+        if suit not in valid_suits:
+            raise ValueError(f"suit '{suit}' must be in {valid_suits}")
+
         self._rank = rank
         self._suit = suit
         rank_char = self._rank_to_char(rank)
@@ -49,7 +49,6 @@ class Card:
         self._eval_card = EvaluationCard.new(f"{rank_char}{suit_char}")
 
     def __repr__(self):
-        """Pretty printing the object."""
         icon = self._suit_to_icon(self.suit)
         return f"<Card card=[{self.rank} of {self.suit} {icon}]>"
 
@@ -58,19 +57,15 @@ class Card:
 
     def __lt__(self, other):
         return self.rank < other.rank
-        # raise NotImplementedError("Boolean operations not supported")
 
     def __le__(self, other):
         return self.rank <= other.rank
-        # raise NotImplementedError("Boolean operations not supported")
 
     def __gt__(self, other):
         return self.rank > other.rank
-        # raise NotImplementedError("Boolean operations not supported")
 
     def __ge__(self, other):
         return self.rank >= other.rank
-        # raise NotImplementedError("Boolean operations not supported")
 
     def __eq__(self, other):
         return int(self) == int(other)
@@ -83,22 +78,18 @@ class Card:
 
     @property
     def eval_card(self) -> EvaluationCard:
-        """Return an `EvaluationCard` for use in the `Evaluator`."""
         return self._eval_card
 
     @property
     def rank_int(self) -> int:
-        """Get the rank as an int"""
         return self._rank
 
     @property
     def rank(self) -> str:
-        """Get the rank as a string."""
         return self._rank_to_str(self._rank)
 
     @property
     def suit(self) -> str:
-        """Get the suit."""
         return self._suit
 
     def _str_to_rank(self, string: str) -> int:
@@ -161,16 +152,14 @@ class Card:
         }[rank]
 
     def _suit_to_icon(self, suit: str) -> str:
-        """Icons for pretty printing."""
         return {"hearts": "♥", "diamonds": "♦", "clubs": "♣", "spades": "♠"}[suit]
 
     def to_dict(self) -> Dict[str, Union[int, str]]:
-        """Turn into dict."""
         return dict(rank=self._rank, suit=self._suit)
 
     @staticmethod
     def from_dict(x: Dict[str, Union[int, str]]):
-        """From dict turn into class."""
+        """From dict into an object."""
         if set(x) != {"rank", "suit"}:
             raise NotImplementedError(f"Unrecognised dict {x}")
         return Card(rank=x["rank"], suit=x["suit"])
