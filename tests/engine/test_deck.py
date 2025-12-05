@@ -26,7 +26,7 @@ class TestDeckBasics:
         deck = Deck()
         initial_len = len(deck)
 
-        card = deck.pick(random=True)
+        card = deck.pick_random_card()
 
         assert isinstance(card, Card)
         assert len(deck) == initial_len - 1
@@ -39,7 +39,7 @@ class TestDeckBasics:
 
         # We already picked 1, so pick 51 more
         for _ in range(51):
-            picked_cards.add(deck.pick(random=True))
+            picked_cards.add(deck.pick_random_card())
 
         assert len(picked_cards) == 52
         assert len(deck) == 0
@@ -49,7 +49,7 @@ class TestDeckBasics:
         deck = Deck()
         initial_len = len(deck)
 
-        card = deck.pick(random=False)
+        card = deck.pick_sequential_card()
         assert isinstance(card, Card)
         assert len(deck) == initial_len - 1
         assert deck.dealt_count == 1
@@ -59,9 +59,9 @@ class TestDeckBasics:
         deck = Deck()
 
         # Draw some cards
-        deck.pick()
-        deck.pick()
-        deck.pick()
+        deck.pick_random_card()
+        deck.pick_random_card()
+        deck.pick_random_card()
 
         # Check length decreases
         assert len(deck) == 49
@@ -78,9 +78,9 @@ class TestDeckBasics:
         deck = Deck()
         # Empty the deck
         for _ in range(52):
-            deck.pick()
+            deck.pick_random_card()
 
         assert len(deck) == 0
 
         with pytest.raises(ValueError, match="Deck is empty"):
-            deck.pick()
+            deck.pick_random_card()

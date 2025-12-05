@@ -46,21 +46,23 @@ class Deck:
         self._dealt_cards: List[Card] = []
         random.shuffle(self._cards_in_deck)
 
-    def pick(self, random: bool = True) -> Card:
-        """
-        Pick a card from the deck.
-        If random is set, return a random card;
-        else return the next card in the deck
-        """
-        if not len(self._cards_in_deck):
-            raise ValueError("Deck is empty - please use Deck.reset()")
-        if random:
-            index: int = np.random.randint(len(self._cards_in_deck), size=None)
-        else:
-            index: int = len(self._cards_in_deck) - 1
+    def pick_random_card(self) -> Card:
+        return self._next_card(random=True)
 
-        picked_card = self._pick_card_using_index(index)
-        return picked_card
+    def pick_sequential_card(self) -> Card:
+        return self._next_card(random=False)
+
+    def _check_deck_not_empty(self) -> None:
+        if not self._cards_in_deck:
+            raise ValueError("Deck is empty - please use Deck.reset()")
+
+    def _next_card(self, random: bool = True) -> Card:
+        self._check_deck_not_empty()
+        if random:
+            index = np.random.randint(len(self._cards_in_deck), size=None)
+        else:
+            index = len(self._cards_in_deck) - 1
+        return self._pick_card_using_index(index)
 
     def _pick_card_using_index(self, index: int) -> Card:
         picked_card = self._cards_in_deck.pop(index)
