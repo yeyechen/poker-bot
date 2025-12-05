@@ -12,14 +12,12 @@ default_include_ranks: List[int] = list(range(2, 15))
 
 
 class Deck:
-    """Class to manage the deck."""
 
     def __init__(
         self,
         include_suits: List[str] = default_include_suits,
         include_ranks: List[int] = default_include_ranks,
     ):
-        """Construct the deck of cards."""
         self._include_suits = include_suits
         self._include_ranks = include_ranks
         self.reset()
@@ -49,31 +47,22 @@ class Deck:
         random.shuffle(self._cards_in_deck)
 
     def pick(self, random: bool = True) -> Card:
-        """Return a card from the deck.
-
-        Parameters
-        ----------
-        random : bool
-            If this is true, return a completely random card, else return the
-            next card in the deck.
-
-        Returns
-        -------
-        card : Card
-            The card that was picked.
+        """
+        Pick a card from the deck.
+        If random is set, return a random card;
+        else return the next card in the deck
         """
         if not len(self._cards_in_deck):
             raise ValueError("Deck is empty - please use Deck.reset()")
-        elif random:
+        if random:
             index: int = np.random.randint(len(self._cards_in_deck), size=None)
         else:
             index: int = len(self._cards_in_deck) - 1
-        card: Card = self._cards_in_deck.pop(index)
-        self._dealt_cards.append(card)
-        return card
 
-    def remove(self, card):
-        """Remove a specific card from the deck"""
-        if card in self._cards_in_deck:
-            self._cards_in_deck.remove(card)
-            self._dealt_cards.append(card)
+        picked_card = self._pick_card_using_index(index)
+        return picked_card
+
+    def _pick_card_using_index(self, index: int) -> Card:
+        picked_card = self._cards_in_deck.pop(index)
+        self._dealt_cards.append(picked_card)
+        return picked_card
