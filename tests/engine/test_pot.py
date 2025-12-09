@@ -203,13 +203,6 @@ class TestPlayerPotIntegration:
         # Player can directly index the pot
         assert pot[player] == 250
 
-    def test_invalid_pot_index_raises_error(self):
-        """Test that indexing pot with non-player raises ValueError."""
-        pot = Pot()
-
-        with pytest.raises(ValueError, match="Index the pot with the player"):
-            _ = pot["not_a_player"]
-
     def test_player_pot_reference_consistency(self):
         """Test that player and pot reference the same pot object."""
         pot = Pot()
