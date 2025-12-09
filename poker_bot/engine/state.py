@@ -16,7 +16,6 @@ class PokerGameState:
         self._action = action
 
     def __repr__(self):
-        """Make a nice printable node."""
         name = "<PokerGameState prev_state={} table={} player={} action={}>"
         return name.format(
             self._previous_state, self._table, self._player, self._action
@@ -34,30 +33,16 @@ class PokerGameState:
 
     @property
     def table(self):
-        """"""
         return self._table
 
     @property
     def is_terminal(self):
-        """"""
         return self._is_terminal
 
     @property
     def is_chance_node(self):
-        """"""
         return False
 
     @property
     def current_player(self):
-        """Get the current player."""
         return self._player
-
-    @property
-    def utility(self):
-        """"""
-        if self.is_terminal:
-            utility = [-1.0 for _ in range(self._table.n_players)]
-            # TODO(fedden): How to route the winner index here.
-            utility[winner_i] = 1.0
-            return utility
-        return [0.0 for _ in range(self._table.n_players)]

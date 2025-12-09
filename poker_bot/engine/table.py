@@ -18,7 +18,6 @@ class PokerTable:
     """
 
     def __init__(self, players: List[Player], pot: Pot, **deck_kwargs):
-        """Construct the table."""
         self.players: List[Player] = players
         self.total_n_chips_on_table: int = sum(p.n_chips for p in self.players)
         self.pot: Pot = pot
@@ -30,22 +29,18 @@ class PokerTable:
         if not all(p.pot.uid == self.pot.uid for p in self.players):
             raise ValueError(f"Players and table point to different pots.")
 
+    def __repr__(self):
+        player_names = [player.name for player in self.players]
+        return f"<PokerTable players={player_names}>"
+
     @property
     def n_players(self) -> int:
-        """How many players are on the table?"""
         return len(self.players)
 
     def set_players(self, players: List[Player]):
-        """Set the players."""
         self.players = players
         if not all(p.pot.uid == self.pot.uid for p in self.players):
             raise ValueError(f"Players and table point to different pots.")
 
     def add_community_card(self, card: Card):
-        """Add a public card to the table for all players to use."""
         self.community_cards.append(card)
-
-    def __repr__(self):
-        """Get a nice print out in the debugger for the table."""
-        player_names = [player.name for player in self.players]
-        return f"<PokerTable players={player_names}>"
